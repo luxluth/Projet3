@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 // Définition des fonctions pour les opérations de comparaison
 int equals(int a, int b) { return a == b; }
@@ -22,7 +21,7 @@ int test(int a, char* op, int b) {
         case 'n': result = not_equals(a, b); break;
         default: printf("Opérateur non reconnu : %s\n", op); exit(1);
     }
-    return (result) ? 1 : 0; // On retourne 1 si l'expression est vraie, 0 sinon
+    return (result);
 }
 
 // Fonction main qui teste plusieurs expressions de comparaison
@@ -31,38 +30,38 @@ int main() {
     int b = 7;
 
     // Test de l'opération d'égalité
-    if (test(a, "-eq", b)) {
+    if (test(a, "-eq", b) == 0) {
         printf("%d n'est pas égal à %d\n", a, b);
     } else {
         printf("%d est égal à %d\n", a, b);
     }
 
     // Test de l'opération de supériorité stricte
-    if (test(a, "-gt", b)) {
+    if (test(a, "-gt", b) == 0) {
         printf("%d est strictement inférieur à %d\n", a, b);
     } else {
         printf("%d n'est pas strictement inférieur à %d\n", a, b);
     }
 
     // Test de l'opération de supériorité ou égalité
-    if (test(a, "-ge", b)) {
+    if (test(a, "-ge", b) == 0) {
         printf("%d est inférieur à %d\n", a, b);
     } else {
         printf("%d est supérieur à %d ou %d\n", a, b, a);
     }
 
     // Test de l'opération d'infériorité stricte
-    if (test(a, "-lt", b)) {
+    if (test(a, "-lt", b) == 0) {
         printf("%d est strictement supérieur à %d\n", a, b);
     } else {
         printf("%d n'est pas strictement supérieur à %d\n", a, b);
     }
 
-    // Test de l'opération d'infériorité ou égalité
-    if (test(a, "-le", b)) {
-        printf("%d est supérieur à %d\n", a, b);
+    // 1 -ne 1
+    if (test(1, "-ne", 1) == 0) {
+        printf("1 est différent de 1\n");
     } else {
-        printf("%d est inférieur à %d ou %d\n", a, b, b);
+        printf("1 est égal à 1\n");
     }
 
 }
