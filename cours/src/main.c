@@ -1,75 +1,68 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <unistd.h>
+#include <string.h>
+#include <errno.h>
 
-// ! DOESN'T PASS ALL THE TESTS //
+typedef struct point {
+    int x;
+    int y;
+    int z;
+} point_t;
 
-
-/*
- * Compare function to compare two characters.
- * @param a: the first character to compare.
- * @param b: the second character to compare.
- * @return: 0 if a equals b, a negative number if b is greater than a, 
- *          and a positive number otherwise.
- */
-int compare(char a, char b) {
-    if (a == b) {
-        return 0;
-    } else if (a < b) {
-        return -1;
-    } else {
-        return 1;
-    }
-}
-
-typedef struct node{
-    char val;
-    struct node *next;
-} node_t;
-
-
-/*
- * Insert a node with the given value into the linked list based on the order defined by the comparison function.
- * If the value is already in the list, no element is added and the list is not modified.
- * @param head: a pointer to a pointer to the head of the linked list.
- * @param val: the value to be inserted.
- * @param cmp: a comparison function which defines the order relationship of the list.
- * @return: 0 if success, -1 otherwise.
- */
-int insert(node_t **head, char val, int (*cmp)(char, char)) {
-    node_t *new_node = (node_t*) malloc(sizeof(node_t));
-    if (new_node == NULL) {
+int save(point_t *pt, int size, char *filename) {
+    int fd = open(filename, O_CREAT | O_TRUNC | O_WRONLY, S_IRUSR | S_IWUSR);
+    if (fd == -1) {
+        // error opening the file
         return -1;
     }
-    new_node->val = val;
-    new_node->next = NULL;
 
-    if (*head == NULL) {
-        *head = new_node;
-        return 0;
+    // calculate the total size of the array in bytes
+    int total_size = size * sizeof(point_t);
+
+    // extend the size of the file to hold the entire array
+    if (ftruncate(fd, total_size) == -1) {
+        // error extending the size of the file
+        close(fd);
+        return -6;
     }
 
-    node_t *prev = NULL;
-    node_t *curr = *head;
-    while (curr != NULL && cmp(curr->val, val) < 0) {
-        prev = curr;
-        curr = curr->next;
+    // map the file into memory
+    point_t *map = mmap(NULL, total_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (map == MAP_FAILED) {
+        // error mapping the file
+        close(fd);
+        return -3;
     }
 
-    if (curr != NULL && cmp(curr->val, val) == 0) {
-        free(new_node);
-        return 0;
+    // copy the array into the memory-mapped file
+    memcpy(map, pt, total_size);
+
+    // sync the changes made to the memory-mapped file back to the file on disk
+    if (msync(map, total_size, MS_SYNC) == -1) {
+        // error syncing the memory-mapped file
+        munmap(map, total_size);
+        close(fd);
+        return -5;
     }
 
-    if (prev == NULL) {
-        new_node->next = *head;
-        *head = new_node;
-    } else {
-        prev->next = new_node;
-        new_node->next = curr;
+    // unmap the file from memory
+    if (munmap(map, total_size) == -1) {
+        // error unmapping the file
+        close(fd);
+        return -4;
     }
+
+    // close the file
+    if (close(fd) == -1) {
+        // error closing the file
+        return -2;
+    }
+
     return 0;
 }
-
 
 int main(int argc, char *argv[])
 {
